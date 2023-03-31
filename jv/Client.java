@@ -10,21 +10,25 @@ public class Client
 {
     public static void main(String[] args)
     {
-        try
+        int count = 0;
+        while(count++ < 5)
         {
-            URL localhost = new URL("http://127.0.0.1:9000/get");
-            URLConnection urlcon = localhost.openConnection();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(urlcon.getInputStream()));
-
-            int c;
-            while((c = reader.read()) != -1)
+            try
             {
-                System.out.println((char) c);
+                URL localhost = new URL("http://127.0.0.1:9000/get");
+                URLConnection urlcon = localhost.openConnection();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(urlcon.getInputStream()));
+
+                int c;
+                while((c = reader.read()) != -1)
+                {
+                    System.out.println((char) c);
+                }
             }
-        }
-        catch(IOException ie)
-        {
-            ie.printStackTrace();
+            catch(IOException ie)
+            {
+                ie.printStackTrace();
+            }
         }
     }
 }

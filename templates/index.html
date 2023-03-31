@@ -1,5 +1,12 @@
 <html>
-    <head></head>
+    <head>
+        <style>
+            .pack-list-ul-li
+            {
+                border: 1px solid blue;
+            }
+        </style>
+    </head>
     <body>
         <select>
             <optgroup>
@@ -8,6 +15,10 @@
             {% endfor %}
             </optgroup>
         </select>
+        <div id="pack-list">
+            <ul id="pack-list-ul">
+            </ul>
+        </div>
     <script src="./static/index.js"></script>
     </body>
 </html>

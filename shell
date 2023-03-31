@@ -20,7 +20,7 @@ elif [[ "$1" = "build" ]]; then
     cd ..;
 elif [[ "$1" = "run" ]]; then
     export FLASK_DEBUG=1;
-    sudo ./bin/python3 -m flask --debug run -p 9000 --with-threads;
+    sudo ./bin/python3 -m flask -A app --debug run -p 9000 --with-threads;
 else
     echo "Usage: shell [run|stop]";
 fi

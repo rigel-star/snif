@@ -3,6 +3,7 @@ bin/
 obj/
 lib/
 lib64/
+include/
 **/*.class
 **/*.o
 **/*.swp
