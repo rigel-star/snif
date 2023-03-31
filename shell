@@ -1,0 +1,26 @@
+#!/bin/bash
+
+clean()
+{
+    rm -f *.class;
+    rm -f *.o;
+}
+
+if [[ "$1" = "clean" ]]; then
+    clean;
+    echo "DONE CLEAN";
+elif [[ "$1" = "start" ]]; then
+    source ./bin/activate;
+elif [[ "$1" = "stop" ]]; then
+    deactivate;
+elif [[ "$1" = "build" ]]; then
+    mkdir -p lib;
+    cd ./src;
+    make libsnif.so;
+    cd ..;
+elif [[ "$1" = "run" ]]; then
+    export FLASK_DEBUG=1;
+    sudo ./bin/python3 -m flask --debug run -p 9000 --with-threads;
+else
+    echo "Usage: shell [run|stop]";
+fi

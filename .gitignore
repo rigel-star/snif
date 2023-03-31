@@ -1,0 +1,8 @@
+__pycache__/
+bin/
+obj/
+lib/
+lib64/
+**/*.class
+**/*.o
+**/*.swp
