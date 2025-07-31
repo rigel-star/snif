@@ -1,53 +1,50 @@
-#!/bin/python3
+from ctypes import *
+import os
 
-import threading
-import ctypes
-import queue
-import sys
-import typing
+libsnif = CDLL("./libsnif.so")
 
-_recv_buffer = (ctypes.c_char * 2048)()
-_api_buffer = None
+libsnif.get_all_interfaces_names.argtypes = [POINTER(c_int)]
+libsnif.get_all_interfaces_names.restype = POINTER(c_char_p)
 
-def _read_data():
-    counter = 0
-    while True:
-        data = _recv_buffer.value
-        if data and len(data) > 0:
-            if _api_buffer is not None:
-                _api_buffer.append(data[:])
-            _recv_buffer.value = bytes()
-            '''
-            if len(data) <= 13:
-                typ = data[12]
-            else:
-                typ = (data[12] << 8) | data[13]
-            
-            if typ == 0x0800:
-                print(f"{counter}) IPV4")
-                counter += 1
-            elif typ == 0x86DD:
-                print(f"{counter}) IPV6")
-                counter += 1
-            '''
+libsnif.free_interfaces_names.argtypes = [POINTER(c_char_p), c_int]
+libsnif.free_interfaces_names.restype = None
 
-def start_listening(buffer: typing.List = None):
-    global _api_buffer
-    _api_buffer = buffer
+libsnif.snif_lookup_dev.argtypes = [c_char_p]
+libsnif.snif_lookup_dev.restype = None
 
-    clib = ctypes.CDLL("./lib/libsnif.so")
-    fn_recv_ether_raw = clib.recv_ether_raw
-    fn_recv_ether_raw.argtypes = [ctypes.POINTER(ctypes.c_char)]
+def __listen_to_pkt_pipe(dev: bytes):
+    pipe_path = "/tmp/packets.pipe"
 
-    fn_listen_on_intf = clib.listen_on_intf
-    fn_listen_on_intf.argtypes = [ctypes.POINTER(ctypes.c_char)]
-    clib.listen_on_intf("enp0s6".encode())
+    if not os.path.exists(pipe_path):
+        os.mkfifo(pipe_path)
 
-    ether_recv_thread = threading.Thread(target=clib.recv_ether_raw, args=(_recv_buffer,))
-    ether_recv_thread.start()
+    print("Listening to packets...")
+    # Open pipe for reading **before** calling C function
+    with open(pipe_path, 'r') as pipe:
+        # Start C packet capture in a separate thread or process ideally
+        # but if calling inline, use threading or subprocess to avoid blocking
 
-    read_thread = threading.Thread(target=_read_data)
-    read_thread.start()
+        # Start a thread or process for the C capture
+        import threading
+        t = threading.Thread(target=libsnif.snif_lookup_dev, args=(dev,), daemon=True)
+        t.start()
 
-if __name__ == "__main__":
-    main()
+        while True:
+            line = pipe.readline()
+            if line:
+                print(f"Received: {line.strip()}")
+
+
+def __get_all_interfaces_names():
+    count = c_int()
+
+    names_ptr = libsnif.get_all_interfaces_names(byref(count))
+    if not names_ptr:
+        raise RuntimeError("Failed to get interface names")
+
+    interface_names = [names_ptr[i].decode() for i in range(count.value)]
+
+    print(interface_names)
+
+    libsnif.free_interfaces_names(names_ptr, count)
+    return interface_names
