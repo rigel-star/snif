@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends libpcap0.8 && \
+RUN apt-get update && apt-get install -y --no-install-recommends libpcap0.8 curl && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

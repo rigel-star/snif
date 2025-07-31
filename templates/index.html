@@ -8,13 +8,9 @@
         </style>
     </head>
     <body>
-        <select>
-            <optgroup>
-            {% for i in all_ifs %}
-                <option>{{ i }}</option>
-            {% endfor %}
-            </optgroup>
-        </select>
+        {% for interface in all_ifs %}
+        <a href="/if/{{interface}}">{{interface}}</a>
+        {% endfor %}
         <div id="pack-list">
             <ul id="pack-list-ul">
             </ul>

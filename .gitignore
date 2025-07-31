@@ -7,3 +7,5 @@ include/
 **/*.class
 **/*.o
 **/*.swp
+.vscode/
+*.so

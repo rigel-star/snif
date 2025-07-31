@@ -6,16 +6,9 @@
 #include <netinet/if_ether.h>
 
 #include "ether.h"
-
-#define MAC_ADDR_LEN 12
+#include "eth_parser.h"
 
 #define SNIF
-
-struct EtherHeader {
-    u_char src_mac[MAC_ADDR_LEN];
-    u_char dst_mac[MAC_ADDR_LEN];
-    u_short type;
-};
 
 struct EtherHeader to_snif_ether_header(const u_char *packet) {
     struct ether_header *eth_header = (struct ether_header *) packet;
@@ -32,7 +25,6 @@ SNIF char *ether_type_to_str(u_short type) {
         case SNIF_ETHER_TYPE_IPV4: return "IPV5";
         case SNIF_ETHER_TYPE_IPV6: return "IPV6";
         default: {
-            printf("%02x\n", type);
             return "UNK";
         }
     }
@@ -57,7 +49,7 @@ FILE *pkt_writer_fp;
 
 void write_into_pipe(struct EtherHeader *eth_header) {
     char buffer[256];
-    sprintf(
+    snprintf(
         buffer, 
         sizeof(buffer),
         "Src: %02x:%02x:%02x:%02x:%02x:%02x, Dst: %02x:%02x:%02x:%02x:%02x:%02x, Typ: %s",
@@ -67,19 +59,18 @@ void write_into_pipe(struct EtherHeader *eth_header) {
         eth_header->dst_mac[3], eth_header->dst_mac[4], eth_header->dst_mac[5],
         ether_type_to_str(eth_header->type)
     );
-    fprintf(pkt_writer_fp, "%s", buffer);
+    fprintf(pkt_writer_fp, "%s\n", buffer);
     fflush(pkt_writer_fp);
 }
 
 void snif_packet_handler(u_char *args, const struct pcap_pkthdr *pkt_header, const u_char *packet) {
-    struct EtherHeader header = to_snif_ether_header(packet);
-    fprintf(pkt_writer_fp, "%s\n", header.src_mac);
+    EtherHeader_t hdr = parse_ether_pkt(packet, pkt_header->caplen);
 }
 
 /**
  * dev: Device to read from
  */
-void snif_lookup_dev(char *dev) {
+int snif_lookup_dev(char *dev) {
     char errbuff[PCAP_ERRBUF_SIZE];
     pcap_t *handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuff);
     if (handle == NULL) {
@@ -93,7 +84,12 @@ void snif_lookup_dev(char *dev) {
         return 1;
     }
 
-    pcap_loop(handle, 5, snif_packet_handler, NULL);
+    pcap_loop(handle, 1000, snif_packet_handler, NULL);
     pcap_close(handle);
     fclose(pkt_writer_fp);
+    return 0;
+}
+
+int main() {
+    snif_lookup_dev("en0");
 }

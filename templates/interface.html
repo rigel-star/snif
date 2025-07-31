@@ -1,0 +1,39 @@
+<html>
+    <head>
+        <style>
+            .pack-list-ul-li
+            {
+                border: 1px solid blue;
+            }
+        </style>
+    </head>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <body>
+        <ul id="pack-list">
+
+        </ul>
+    </body>
+    <script defer>
+        let list = document.getElementById("pack-list");
+
+        function addPack(packList) {
+            for (let item of packList) {
+                let newPackItem = document.createElement("li");
+                newPackItem.classList.add("pack-list-ul-li");
+                newPackItem.innerHTML = item;
+                list.appendChild(newPackItem);
+            }
+        }
+
+        (async () => {
+            // setInterval(() => {
+                axios.get("http://localhost:9000/if/{{interface}}/get")
+                .then(resp => {
+                    addPack(resp.data['packets']);
+                })
+                .catch(err => console.error(err));
+            // }, 1000);
+        })();
+    </script>
+</html>
