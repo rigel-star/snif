@@ -10,67 +10,16 @@
 
 #define SNIF
 
-struct EtherHeader to_snif_ether_header(const u_char *packet) {
-    struct ether_header *eth_header = (struct ether_header *) packet;
-    struct EtherHeader ret;
-    memcpy(ret.src_mac, eth_header->ether_shost, 12);
-    memcpy(ret.dst_mac, eth_header->ether_dhost, 12);
-    ret.type = eth_header->ether_type;
-    return ret;
-}
-
-SNIF char *ether_type_to_str(u_short type) {
-    switch (type) {
-        case SNIF_ETHER_TYPE_ARP: return "ARP";
-        case SNIF_ETHER_TYPE_IPV4: return "IPV5";
-        case SNIF_ETHER_TYPE_IPV6: return "IPV6";
-        default: {
-            return "UNK";
-        }
-    }
-}
-
-void dump_snif_ether_header(struct EtherHeader *eth_header) {
-    printf(
-        "Src: %02x:%02x:%02x:%02x:%02x:%02x\n", 
-        eth_header->src_mac[0], eth_header->src_mac[1], eth_header->src_mac[2],
-        eth_header->src_mac[3], eth_header->src_mac[4], eth_header->src_mac[5]
-    );
-    printf(
-        "Dst: %02x:%02x:%02x:%02x:%02x:%02x\n", 
-        eth_header->dst_mac[0], eth_header->dst_mac[1], eth_header->dst_mac[2],
-        eth_header->dst_mac[3], eth_header->dst_mac[4], eth_header->dst_mac[5]
-    );
-    printf("Typ: %s\n", ether_type_to_str(eth_header->type));
-}
-
-// write to pipe
 FILE *pkt_writer_fp;
 
-void write_into_pipe(struct EtherHeader *eth_header) {
-    char buffer[256];
-    snprintf(
-        buffer, 
-        sizeof(buffer),
-        "Src: %02x:%02x:%02x:%02x:%02x:%02x, Dst: %02x:%02x:%02x:%02x:%02x:%02x, Typ: %s",
-        eth_header->src_mac[0], eth_header->src_mac[1], eth_header->src_mac[2],
-        eth_header->src_mac[3], eth_header->src_mac[4], eth_header->src_mac[5],
-        eth_header->dst_mac[0], eth_header->dst_mac[1], eth_header->dst_mac[2],
-        eth_header->dst_mac[3], eth_header->dst_mac[4], eth_header->dst_mac[5],
-        ether_type_to_str(eth_header->type)
-    );
-    fprintf(pkt_writer_fp, "%s\n", buffer);
-    fflush(pkt_writer_fp);
-}
-
-void snif_packet_handler(u_char *args, const struct pcap_pkthdr *pkt_header, const u_char *packet) {
-    EtherHeader_t hdr = parse_ether_pkt(packet, pkt_header->caplen);
+SNIF void snif_packet_handler(u_char *args, const struct pcap_pkthdr *pkt_header, const u_char *packet) {
+    parse_pkt_to_json(packet, pkt_header->caplen);
 }
 
 /**
  * dev: Device to read from
  */
-int snif_lookup_dev(char *dev) {
+SNIF int snif_lookup_dev(char *dev) {
     char errbuff[PCAP_ERRBUF_SIZE];
     pcap_t *handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuff);
     if (handle == NULL) {
@@ -84,7 +33,7 @@ int snif_lookup_dev(char *dev) {
         return 1;
     }
 
-    pcap_loop(handle, 1000, snif_packet_handler, NULL);
+    pcap_loop(handle, 5, snif_packet_handler, NULL);
     pcap_close(handle);
     fclose(pkt_writer_fp);
     return 0;
