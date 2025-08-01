@@ -28,9 +28,11 @@
 
         (async () => {
             // setInterval(() => {
-                axios.get("http://localhost:9000/if/{{interface}}/get")
+                axios.get("http://localhost:5000/if/{{interface}}/get")
                 .then(resp => {
-                    addPack(resp.data['packets']);
+                    console.log(resp.data['packets'])
+                    let js = JSON.parse(resp.data['packets']);
+                    console.log(js)
                 })
                 .catch(err => console.error(err));
             // }, 1000);

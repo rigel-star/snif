@@ -21,19 +21,19 @@ char* parse_ipv4_to_json(const IPv4_t *ip) {
         buffer,
         512,
         "{"
-            "\"version\": %" PRIu8 ", "
-            "\"ihl\": %" PRIu8 ", "
-            "\"dscp\": %" PRIu8 ", "
-            "\"ecn\": %" PRIu8 ", "
-            "\"total_length\": %" PRIu16 ", "
-            "\"id\": %" PRIu16 ", "
-            "\"flags\": %" PRIu16 ", "
-            "\"fragment_offset\": %" PRIu16 ", "
-            "\"ttl\": %" PRIu8 ", "
-            "\"protocol\": %" PRIu8 ", "
-            "\"checksum\": %" PRIu16 ", "
-            "\"src\": \"%u.%u.%u.%u\", "
-            "\"dst\": \"%u.%u.%u.%u\""
+            "\"Version\": %" PRIu8 ", "
+            "\"Internet Header Length\": %" PRIu8 ", "
+            "\"Differentiated Services Code Point\": %" PRIu8 ", "
+            "\"Explicit Congestion Notification\": %" PRIu8 ", "
+            "\"Totla Length\": %" PRIu16 ", "
+            "\"Identification\": %" PRIu16 ", "
+            "\"Flags\": %" PRIu16 ", "
+            "\"Offset\": %" PRIu16 ", "
+            "\"Time to Live\": %" PRIu8 ", "
+            "\"Protocol\": %" PRIu8 ", "
+            "\"Checksum\": %" PRIu16 ", "
+            "\"Source\": \"%u.%u.%u.%u\", "
+            "\"Destination\": \"%u.%u.%u.%u\""
         "}",
         version,
         ihl,
@@ -53,15 +53,40 @@ char* parse_ipv4_to_json(const IPv4_t *ip) {
     return buffer;
 }
 
-char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest) {    
+char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest) {
+    char *buffer = malloc(sizeof(char) * 1024); 
+    if (!buffer) return NULL;
+
     if (eth_header->type == IPV4) {
         const IPv4_t *ip = (const IPv4_t*) (rest);
-        return parse_ipv4_to_json(ip);
+        snprintf(
+            buffer,
+            1024,
+            "{"
+                "\"Source\": \"%02x:%02x:%02x:%02x:%02x:%02x\", "
+                "\"Destination\": \"%02x:%02x:%02x:%02x:%02x:%02x\", "
+                "\"Data\": %s "
+            "}",
+            eth_header->src_mac[0],
+            eth_header->src_mac[1],
+            eth_header->src_mac[2],
+            eth_header->src_mac[3],
+            eth_header->src_mac[4],
+            eth_header->src_mac[5],
+            eth_header->dst_mac[0],
+            eth_header->dst_mac[1],
+            eth_header->dst_mac[2],
+            eth_header->dst_mac[3],
+            eth_header->dst_mac[4],
+            eth_header->dst_mac[5],
+            parse_ipv4_to_json(ip)
+        );
+        return buffer;
     }
     return "Ethernet Sth Else";
 }
 
-void parse_pkt_to_json(const u_char *packet, int len) {
+char* parse_pkt_to_json(const u_char *packet, int len) {
     if (len < 14) {
         printf("Packet too short for Ethernet header.\n");
         exit(EXIT_FAILURE);
@@ -82,8 +107,8 @@ void parse_pkt_to_json(const u_char *packet, int len) {
     else {
         if (hdr.type == 0x0800) {
             char *json = parse_ether_frame_to_json(&hdr, (packet + 14));
-            printf("%s\n", json);
-            free(json);
+            return json;
         }
     }
+    return NULL;
 }

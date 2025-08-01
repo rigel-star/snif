@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-typedef struct IPv4 {
+typedef struct __attribute__((packed)) IPv4 {
     uint8_t ver_ihl;
     uint8_t dscp_ecn;
     uint16_t len;

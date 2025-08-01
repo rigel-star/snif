@@ -9,3 +9,4 @@ include/
 **/*.swp
 .vscode/
 *.so
+**/*.dSYM

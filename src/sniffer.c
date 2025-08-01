@@ -2,43 +2,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
-#include <netinet/if_ether.h>
 
-#include "ether.h"
 #include "eth_parser.h"
 
 #define SNIF
 
-FILE *pkt_writer_fp;
-
-SNIF void snif_packet_handler(u_char *args, const struct pcap_pkthdr *pkt_header, const u_char *packet) {
-    parse_pkt_to_json(packet, pkt_header->caplen);
-}
-
-/**
- * dev: Device to read from
- */
-SNIF int snif_lookup_dev(char *dev) {
+SNIF pcap_t* snif_open(char *dev) {
     char errbuff[PCAP_ERRBUF_SIZE];
-    pcap_t *handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuff);
-    if (handle == NULL) {
+    pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuff);
+    if (!handle) {
         fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuff);
-        return 2;
+        return NULL;
     }
-
-    pkt_writer_fp = fopen("/tmp/packets.pipe", "w");
-    if (!pkt_writer_fp) {
-        perror("Failed to open named pipe");
-        return 1;
-    }
-
-    pcap_loop(handle, 5, snif_packet_handler, NULL);
-    pcap_close(handle);
-    fclose(pkt_writer_fp);
-    return 0;
+    return handle;
 }
 
-int main() {
-    snif_lookup_dev("en0");
+SNIF void snif_close(pcap_t *handle) {
+    if (handle) pcap_close(handle);
+}
+
+SNIF int snif_next(pcap_t *handle, char *out_buf) {
+    struct pcap_pkthdr *header;
+    const u_char *packet;
+    int res = pcap_next_ex(handle, &header, &packet);
+
+    if (res == 1) {
+        char *json = parse_pkt_to_json(packet, header->caplen);
+        snprintf(out_buf, strlen(json), "%s", json);
+        free(json);
+        return 0;
+    }
+    else if (res == 0) {
+        return -1;
+    }
+    else {
+        return -2;
+    }
 }

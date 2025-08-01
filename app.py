@@ -3,6 +3,7 @@ import os
 import threading
 from ctypes import *
 import logging
+import sys
 
 libsnif = CDLL("./lib/libsnif.so")
 
@@ -30,8 +31,8 @@ def __get_all_interfaces_names():
 
 app = flask.Flask("snif", static_folder="./static")
 
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+# log = logging.getLogger('werkzeug')
+# log.setLevel(logging.ERROR)
 
 pipe_path = "/tmp/packets.pipe"
 pkt_data = {
@@ -39,9 +40,6 @@ pkt_data = {
 }
 
 def listen_to_pipe():
-    if not os.path.exists(pipe_path):
-        os.mkfifo(pipe_path)
-
     with open(pipe_path, 'r') as pipe:
         while True:
             line = pipe.readline()
@@ -74,7 +72,7 @@ def get_data_for_interface(interface: str):
     chunk = data_list[:chunk_size]
     pkt_data[interface] = data_list[chunk_size:]
     return {
-        "packets": chunk
+        "packets": [chunk]
     }
 
 app.run(host="0.0.0.0", port=9000, debug=True, threaded=True)
