@@ -3,14 +3,28 @@ import json
 
 lib = ctypes.CDLL("./lib/libsnif.so")
 
+'''
+These functions are for capturing and maanging
+packets
+'''
 lib.snif_open.argtypes = [ctypes.c_char_p]
 lib.snif_open.restype = ctypes.c_void_p
 
-lib.snif_next.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int]
+lib.snif_next.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 lib.snif_next.restype = ctypes.c_int
 
 lib.snif_close.argtypes = [ctypes.c_void_p]
 lib.snif_close.restype = None
+
+'''
+Interface related functions
+'''
+lib.get_all_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_int)]
+lib.get_all_interfaces_names.restype = ctypes.POINTER(ctypes.c_char_p)
+
+lib.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), ctypes.c_int]
+lib.free_interfaces_names.restype = None
+
 
 class Sniffer:
     def __init__(self, device: str):
@@ -20,7 +34,7 @@ class Sniffer:
 
     def next_packet(self) -> dict:
         buf = ctypes.create_string_buffer(512)
-        result = lib.snif_next(self.handle, buf, ctypes.sizeof(buf))
+        result = lib.snif_next(self.handle, buf)
         if result == 0:
             return buf.value.decode('utf-8')
         else:
@@ -35,6 +49,21 @@ class Sniffer:
         self.close()
 
 
+class InterfaceManager:
+    def get_all_ifs(self):
+        self.count = ctypes.c_int()
+        self.ifs = lib.get_all_interfaces_names(ctypes.byref(self.count))
+        if not self.ifs:
+            raise RuntimeError(f"Failed to get interface names")
+        return [self.ifs[i].decode("UTF-8") for i in range(self.count.value)]
+
+    def __del__(self):
+        lib.free_interfaces_names(self.ifs, self.count)
+
+
+
+ifm = InterfaceManager()
+print(ifm.get_all_ifs())
 
 sniffer = Sniffer("en0")
 
