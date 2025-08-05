@@ -1,5 +1,4 @@
 import ctypes
-import json
 
 lib = ctypes.CDLL("./lib/libsnif.so")
 
@@ -59,19 +58,3 @@ class InterfaceManager:
 
     def __del__(self):
         lib.free_interfaces_names(self.ifs, self.count)
-
-
-
-ifm = InterfaceManager()
-print(ifm.get_all_ifs())
-
-sniffer = Sniffer("en0")
-
-for _ in range(5):
-    pkt = sniffer.next_packet()
-    if pkt:
-        print("Packet:", pkt)
-    else:
-        print("No packet or timeout")
-
-sniffer.close()
