@@ -1,13 +1,15 @@
 ../lib:
 	mkdir -p ../lib
 
-libsnif.so: eth_parser.c sniffer.c library.c
-	gcc -shared -fPIC -Wall -Wextra -pedantic -ggdb -O2 $^ -lpcap -o ../lib/$@
+CC_FLAGS=-shared -fPIC -Wall -Wextra -pedantic -ggdb -O2
+SRCS = $(wildcard *.c vendor/cJSON/*.c ip/*.c)
+TARGET=libsnif.so
 
-main: sniffer.c eth_parser.c
-	gcc $^ -lpcap -o main
+$(TARGET): $(SRCS)
+	gcc $(CC_FLAGS) $^ -lpcap -o ../lib/$@
 
 .PHONY: clean
 clean:
 	rm -f *.o
 	rm -f main
+	rm -f libsnif.so

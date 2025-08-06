@@ -74,7 +74,6 @@
             function renderIPv4(data) {
                 const container = document.createElement('div');
                 container.className = 'field-group';
-
                 container.appendChild(createField('Version', data.Version));
                 container.appendChild(createField('Internet Header Length', data["Internet Header Length"]));
                 container.appendChild(createField('Differentiated Services Code Point', data["Differentiated Services Code Point"]));
@@ -88,7 +87,6 @@
                 container.appendChild(createField('Checksum', data.Checksum));
                 container.appendChild(createField('Source', data.Source));
                 container.appendChild(createField('Destination', data.Destination));
-
                 return container;
             }
 
@@ -111,22 +109,17 @@
                     ipGroup.appendChild(renderIPv4(packet.Data));
                     packetDiv.appendChild(ipGroup);
                 }
-
                 return packetDiv;
             }
 
             function fetchPackets() {
                 axios.get(url)
                 .then(res => {
-                    const data = JSON.parse(res.data['packets'] + "}");
-                    const el = renderPacket(data);
-                    packetList.prepend(el);
+                    const data = JSON.parse(res.data['packets']);
+                    console.log(data);
                 })
                 .catch(err => {
-                    const errorDiv = document.createElement('div');
-                    errorDiv.style.color = 'red';
-                    errorDiv.textContent = `Error fetching packets: ${err}`;
-                    packetList.prepend(errorDiv);
+                    console.error(err);
                 });
             }
 

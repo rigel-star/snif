@@ -6,11 +6,13 @@
 #include <arpa/inet.h>
 
 #include "ether.h"
-#include "ipv4.h"
 #include "arp.h"
+#include "arp.h"
+#include "vendor/cJSON/cJSON.h"
+#include "ip/ipv4.h"
 
-#define IPV4 0x0800
-#define ARP 0x0806
+#define ETHER_IPV4 0x0800
+#define ETHER_ARP 0x0806
 
 char* parse_ipv4_to_json(const IPv4_t *ip);
 char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest);
