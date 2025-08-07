@@ -9,6 +9,8 @@
 #define OUT_BUF_SIZE 4096
 
 SNIF pcap_t* snif_open(char *dev) {
+    printf("%s\n", dev);
+
     char errbuff[PCAP_ERRBUF_SIZE];
     pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuff);
     if (!handle) {

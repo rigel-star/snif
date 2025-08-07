@@ -67,5 +67,4 @@ if __name__ == "__main__":
     for _ in range(100):
         pkt = snif.next_packet()
         if pkt is not None:
-            # print(pkt)
-            pass
+            print(pkt, end="\n\n")

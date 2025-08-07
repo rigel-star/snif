@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include <arpa/inet.h>
+#include <stdio.h>
 
 typedef struct __attribute__((packed)) IPv4 {
     uint8_t ver_ihl;
@@ -17,8 +19,44 @@ typedef struct __attribute__((packed)) IPv4 {
 
 // IPv4 protocol numbers list
 #define IPV4_ICMP 0x1
+#define IPV4_IGMP 0x2
 #define IPV4_TCP 0x6
 #define IPV4_UDP 17
+#define IPV4_DSR 48
+#define IPV4_SWIPE 53
+#define IPV4_TLSP 56
+#define IPV4_SKIP 57
+#define IPV4_SAT_EXPAK 64
+#define IPV4_EIGRP 88
 #define IPV4_OSPF 89
 
-char *ipv4_proto_name(uint16_t proto);
+#define IPV4_PROTOCOL_NAME_IPV4_ICMP "ICMP(Internet Control Message Protocol)"
+#define IPV4_PROTOCOL_NAME_IPV4_IGMP "ICMP(Internet Group Management Protocol)"
+#define IPV4_PROTOCOL_NAME_IPV4_TCP "TCP(Transmission Control Protocol)"
+#define IPV4_PROTOCOL_NAME_IPV4_UDP "UDP(User Datagram Protocol)"
+#define IPV4_PROTOCOL_NAME_IPV4_DSR "DSR(Dynamic Source Routing Protocol)"
+#define IPV4_PROTOCOL_NAME_IPV4_SWIPE "SwIPe(Swipe IP Security Protocol)"
+#define IPV4_PROTOCOL_NAME_IPV4_TLSP "TLSP(Transport Layer Security Protocol)"
+#define IPV4_PROTOCOL_NAME_IPV4_SKIP "SKIP(Simple Key Management for IP)"
+#define IPV4_PROTOCOL_NAME_IPV4_SAT_EXPAK "SAT-EXPAK(SATNET and Backroom EXPAK)"
+#define IPV4_PROTOCOL_NAME_IPV4_EIGRP "EIGRP(Enhanced Interior Gateway Routing Protocol)"
+#define IPV4_PROTOCOL_NAME_IPV4_OSPF "OSPF(Open Shorted Path First)"
+
+#define IPV4_PROTOCOL_LIST  \
+    X(IPV4_ICMP, IPV4_PROTOCOL_NAME_IPV4_ICMP) \
+    X(IPV4_IGMP, IPV4_PROTOCOL_NAME_IPV4_IGMP) \
+    X(IPV4_TCP, IPV4_PROTOCOL_NAME_IPV4_TCP) \
+    X(IPV4_UDP, IPV4_PROTOCOL_NAME_IPV4_UDP) \
+    X(IPV4_DSR, IPV4_PROTOCOL_NAME_IPV4_DSR) \
+    X(IPV4_SWIPE, IPV4_PROTOCOL_NAME_IPV4_SWIPE) \
+    X(IPV4_TLSP, IPV4_PROTOCOL_NAME_IPV4_TLSP) \
+    X(IPV4_SKIP, IPV4_PROTOCOL_NAME_IPV4_SKIP) \
+    X(IPV4_SAT_EXPAK, IPV4_PROTOCOL_NAME_IPV4_SAT_EXPAK) \
+    X(IPV4_EIGRP, IPV4_PROTOCOL_NAME_IPV4_EIGRP) \
+    X(IPV4_OSPF, IPV4_PROTOCOL_NAME_IPV4_OSPF) \
+
+
+#define IPV4_PROTOCOL_NAME(code) IPV4_PROTOCOL_NAME_##code
+
+char* ipv4_proto_name(uint16_t proto);
+char* parse_ipv4_to_json(const IPv4_t *ip);
