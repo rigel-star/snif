@@ -1,4 +1,7 @@
 import ctypes
+import json
+
+ETHER_IPV4 = 0x0800
 
 lib = ctypes.CDLL("./lib/libsnif.so")
 
@@ -30,6 +33,7 @@ OUT_BUF_SIZE = 4096
 class Sniffer:
     def __init__(self, device: str):
         self.handle = lib.snif_open(device.encode('utf-8'))
+        print(f"Listening on {device}")
         if not self.handle:
             raise RuntimeError(f"Failed to open device {device}")
 
@@ -67,4 +71,12 @@ if __name__ == "__main__":
     for _ in range(100):
         pkt = snif.next_packet()
         if pkt is not None:
-            print(pkt, end="\n\n")
+            try:
+                pkt_json = json.loads(pkt)
+                if int(pkt_json['Payload Type']) == ETHER_IPV4:
+                    payload = pkt_json['Payload']
+                    protocol = payload.get("Protocol")
+                    protocol_name = payload.get("Protocol Name")
+                    print(f"{protocol} = {protocol_name}")
+            except json.JSONDecodeError as err:
+                print(err)

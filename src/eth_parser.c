@@ -5,7 +5,7 @@ char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest) {
         return NULL;
     }
 
-    char* rest_parsed = parse_ipv4_to_json((const IPv4_t *)rest);
+    char* rest_parsed = parse_ipv4_to_json((const IPv4_t *) rest);
     if (!rest_parsed) {
         return NULL;
     }
@@ -61,20 +61,30 @@ char* parse_pkt_to_json(const u_char *packet, int len) {
     EtherHeader_t hdr;
     memcpy(hdr.dst_mac, packet, 6);
     memcpy(hdr.src_mac, packet + 6, 6);
-
     hdr.type = (packet[12] << 8) | packet[13];
 
-    if (hdr.type == 0x8100) {
-        puts("802.1Q VLAN Tagged");
+    int payload_off = 14;
+
+    while (hdr.type == 0x8100) {
+        if (len < payload_off + 4) {
+            fprintf(stderr, "Packet too short for VLAN tag.\n");
+            return NULL;
+        }
+
+        hdr.type = (packet[payload_off + 2] << 8) | packet[payload_off + 3];
+        payload_off += 4;
     }
-    else if (hdr.type <= 1500) {
-        puts("IEEE 802.3 Ethernet Frame");
+    
+    if (hdr.type <= 1500) {
+        fprintf(stderr, "Skipping IEEE 802.3 frame (unsupported).\n");
+        return NULL;
+    }
+    else if (hdr.type == 0x0800) {
+        char *json = parse_ether_frame_to_json(&hdr, (packet + payload_off));
+        return json;
     }
     else {
-        if (hdr.type == 0x0800) {
-            char *json = parse_ether_frame_to_json(&hdr, (packet + 14));
-            return json;
-        }
+        fprintf(stderr, "Unsupported Ethertype: 0x%04x\n", hdr.type);
     }
     return NULL;
 }
