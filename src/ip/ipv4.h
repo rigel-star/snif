@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IPV4_HEADER_H
+#define IPV4_HEADER_H
 
 #include <stdint.h>
 #include <arpa/inet.h>
@@ -9,13 +10,16 @@ typedef struct __attribute__((packed)) IPv4 {
     uint8_t     dscp_ecn;
     uint16_t    len;
     uint16_t    id;
-    uint16_t     flags_off;
+    uint16_t    flags_off;
     uint8_t     ttl;
     uint8_t     proto;
     uint16_t    chk;
     uint8_t     src[4];
     uint8_t     dst[4];
 } IPv4_t;
+
+// sanity checks
+_Static_assert(sizeof(IPv4_t) == 20, "IPv4_t must be 20 bytes");
 
 // IPv4 protocol numbers list
 #define IPV4_ICMP           0x01
@@ -65,3 +69,5 @@ typedef struct __attribute__((packed)) IPv4 {
 
 char* ipv4_proto_name(uint16_t proto);
 char* parse_ipv4_to_json(const IPv4_t *ip);
+
+#endif

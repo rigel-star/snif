@@ -1,47 +1,68 @@
-import flask
 import threading
 from ctypes import *
 from sniffer_api import *
-import queue
+import websockets
+import asyncio
 
-app = flask.Flask("snif", static_folder="./static")
+pkt_queues = {}
+clients = {}
 
-pkt_queues = {
-    
-}
+async def broadcast(interface: str):
+    while True:
+        pkt = await pkt_queues[interface].get()
+        if interface in clients:
+            dead_clients = set()
+            for ws in clients[interface]:
+                try:
+                    await ws.send(json.dumps(pkt))
+                except:
+                    dead_clients.add(ws)
+            clients[interface] -= dead_clients
 
-def __writer(interface: str, count: int, sniffer: Sniffer):
+
+def sniffer_thread(interface, loop):
     global pkt_queues
-    pkt_queues[interface] = queue.Queue()
-    if_q: queue.Queue = pkt_queues[interface]
 
-    for _ in range(count):
-        pkt = sniffer.next_packet()
-        if_q.put(pkt)
+    snif = Sniffer(interface)
+    while True:
+        pkt = snif.next_packet()
+        if pkt is not None:
+            try:
+                pkt_json = json.loads(pkt)
+                if int(pkt_json['Payload Type']) == 0x0800:
+                    asyncio.run_coroutine_threadsafe(
+                        pkt_queues[interface].put(pkt_json),
+                        loop
+                    )
+            except json.JSONDecodeError:
+                continue
 
 
-def start_sniffer(interface: str):
-    sniffer = Sniffer(interface)
-    writer = threading.Thread(target=__writer, args=(interface, 100, sniffer))
-    writer.start()
+async def handle_client(ws):
+    global clients
+    interface = "en0"
+
+    if interface not in clients:
+        clients[interface] = set()
+
+    clients[interface].add(ws)
+    if interface not in pkt_queues:
+        pkt_queues[interface] = asyncio.Queue()
+        loop = asyncio.get_running_loop()
+        threading.Thread(target=sniffer_thread, args=(interface, loop), daemon=True).start()
+        asyncio.create_task(broadcast(interface))
+
+    try:
+        async for msg in ws:
+            pass
+    finally:
+        ws.close()
+        clients[interface].remove(ws)
 
 
-@app.route("/", methods=["GET"])
-def home():
-    if_mgr = InterfaceManager()
-    return flask.render_template("index.html", all_ifs = if_mgr.get_all_ifs())
+async def main():
+    server = await websockets.serve(handle_client, 'localhost', 12345)
+    await server.wait_closed()
 
-@app.route("/if/<interface>")
-def snif_interface(interface: str):
-    start_sniffer(interface)
-    return flask.render_template("interface.html", interface=interface)
-
-@app.route("/if/<interface>/get")
-def get_data_for_interface(interface: str):
-    q = pkt_queues.get(interface, None)
-    pkt_item = q.get()
-    return {
-        "packets": pkt_item
-    }
-
-app.run(host="0.0.0.0", port=9000, debug=True, threaded=True)
+if __name__ == "__main__":
+    asyncio.run(main())
