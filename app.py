@@ -29,11 +29,10 @@ def sniffer_thread(interface, loop):
         if pkt is not None:
             try:
                 pkt_json = json.loads(pkt)
-                if int(pkt_json['Payload Type']) == 0x0800:
-                    asyncio.run_coroutine_threadsafe(
-                        pkt_queues[interface].put(pkt_json),
-                        loop
-                    )
+                asyncio.run_coroutine_threadsafe(
+                    pkt_queues[interface].put(pkt_json),
+                    loop
+                )
             except json.JSONDecodeError:
                 continue
 
@@ -56,7 +55,7 @@ async def handle_client(ws):
         async for msg in ws:
             pass
     finally:
-        ws.close()
+        await ws.close()
         clients[interface].remove(ws)
 
 

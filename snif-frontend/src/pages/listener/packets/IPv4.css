@@ -1,0 +1,70 @@
+.ipv4-container {
+	border: 1px solid #2e77d0;
+	border-radius: 8px;
+	background-color: #f9fbff;
+	max-width: 500px;
+	margin: 1.5rem auto;
+	font-family: Consolas, Monaco, 'Courier New', monospace;
+	color: #202020;
+	box-shadow: 0 0 12px rgba(46, 119, 208, 0.25);
+}
+
+.ipv4-tabs {
+	display: flex;
+	border-bottom: 2px solid #2e77d0;
+}
+
+.ipv4-tab-btn {
+	flex: 1;
+	padding: 12px 0;
+	background: none;
+	border: none;
+	border-bottom: 3px solid transparent;
+	color: #2e77d0;
+	font-weight: 600;
+	cursor: pointer;
+	transition: border-bottom-color 0.3s ease;
+	tab-size: 4;
+}
+
+.ipv4-tab-btn:hover {
+	background-color: #e6f0ff;
+}
+
+.ipv4-tab-btn.active {
+	border-bottom-color: #2e77d0;
+	background-color: #d7e5ff;
+}
+
+.ipv4-content {
+	padding: 16px 20px;
+}
+
+.ipv4-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.ipv4-table th,
+.ipv4-table td {
+	text-align: left;
+	padding: 6px 12px;
+	border-bottom: 1px solid #dde4f5;
+	font-feature-settings: "tnum";
+	font-variant-numeric: tabular-nums;
+}
+
+.ipv4-table th {
+	color: #1352d4;
+	font-weight: 700;
+	width: 40%;
+}
+
+.ipv4-raw {
+	background-color: #e3eaff;
+	padding: 12px;
+	border-radius: 6px;
+	white-space: pre-wrap;
+	font-size: 0.9rem;
+	color: #0c2d66;
+}

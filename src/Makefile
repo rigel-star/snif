@@ -2,7 +2,7 @@
 	mkdir -p ../lib
 
 CC_FLAGS=-shared -fPIC -Wall -Wextra -pedantic -ggdb -O2
-SRCS = $(wildcard *.c vendor/cJSON/*.c ip/*.c)
+SRCS = $(wildcard *.c vendor/cJSON/*.c ip/*.c arp/*.c)
 TARGET=libsnif.so
 
 $(TARGET): $(SRCS)

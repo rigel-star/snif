@@ -1,19 +1,30 @@
 #include "eth_parser.h"
 
 char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest) {
-    if (eth_header->type != ETHER_IPV4) {
+    char* rest_parsed = NULL;
+    
+    if (eth_header->type == ETHER_TYPE_IPV4) {
+        rest_parsed = parse_ipv4_to_json((const IPv4_t *) rest);
+    }
+    else if (eth_header->type == ETHER_TYPE_ARP) {
+        rest_parsed = parse_arp_to_json((const ARP_t*) rest);
+    }
+    else {
+        fprintf(stderr, "Unsupported Ethertype: 0x%04x\n", eth_header->type);
         return NULL;
     }
 
-    char* rest_parsed = parse_ipv4_to_json((const IPv4_t *) rest);
     if (!rest_parsed) {
         return NULL;
     }
 
     cJSON *eth_json = cJSON_CreateObject();
 
-    if (eth_header->type == ETHER_IPV4) {
-        cJSON_AddNumberToObject(eth_json, "Payload Type", ETHER_IPV4);    
+    if (eth_header->type == ETHER_TYPE_IPV4) {
+        cJSON_AddNumberToObject(eth_json, "Payload Type", ETHER_TYPE_IPV4);    
+    }
+    else if (eth_header->type == ETHER_TYPE_ARP) {
+        cJSON_AddNumberToObject(eth_json, "Payload Type", ETHER_TYPE_ARP);    
     }
 
     char src_mac[18], dst_mac[18];
@@ -45,6 +56,7 @@ char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest) {
     }
 
     cJSON_AddItemToObject(eth_json, "Payload", payload_json);
+    cJSON_AddNumberToObject(eth_json, "Length", eth_header->len);
 
     char *out_json = cJSON_PrintUnformatted(eth_json);
     cJSON_Delete(eth_json);
@@ -62,6 +74,7 @@ char* parse_pkt_to_json(const u_char *packet, int len) {
     memcpy(hdr.dst_mac, packet, 6);
     memcpy(hdr.src_mac, packet + 6, 6);
     hdr.type = (packet[12] << 8) | packet[13];
+    hdr.len = len;
 
     int payload_off = 14;
 
@@ -79,12 +92,7 @@ char* parse_pkt_to_json(const u_char *packet, int len) {
         fprintf(stderr, "Skipping IEEE 802.3 frame (unsupported).\n");
         return NULL;
     }
-    else if (hdr.type == 0x0800) {
-        char *json = parse_ether_frame_to_json(&hdr, (packet + payload_off));
-        return json;
-    }
-    else {
-        fprintf(stderr, "Unsupported Ethertype: 0x%04x\n", hdr.type);
-    }
-    return NULL;
+
+    char *json = parse_ether_frame_to_json(&hdr, (packet + payload_off));
+    return json;
 }
