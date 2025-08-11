@@ -1,14 +1,16 @@
 import type IPv4Packet from "../../../packets/IPv4Packet";
 import "./IPv4.css";
 
-export interface IPv4Props {
+import React from "react";
+
+export type IPv4Props = {
     ip: IPv4Packet,
 	frameLen: number,
-};
+} & React.HTMLAttributes<HTMLTableRowElement>;
 
-export default function IPv4({ ip, frameLen }: IPv4Props) {
+export default function IPv4({ ip, frameLen, onClick }: IPv4Props) {
 	return (
-		<tr>
+		<tr className="packet-list-item" onClick={onClick}>
 			<td>
 				{ip.src}
 			</td>

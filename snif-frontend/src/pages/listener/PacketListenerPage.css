@@ -1,51 +1,33 @@
-#packet-list {
+#packet-tbl {
 	padding: 1rem;
 	font-family: monospace;
 	background-color: #f8f9fa;
 	border-radius: 6px;
 	width: 100%;
+	border-collapse: collapse;
 }
 
-#packet-list th {
+#packet-tbl th {
+	background-color: gray;
+}
+
+#packet-tbl tbody tr {
+	height: 40px;
+}
+
+#packet-tbl tbody tr:hover {
+	background-color: rgb(210, 208, 208);
+}
+
+#packet-tbl th {
 	text-align: start;
 }
 
-.packet-list h2 {
-	margin-bottom: 1rem;
-	color: #2c3e50;
+#packet-tbl-container {
+	min-height: 50%;
+	max-height: 50%;
 }
 
-.packet-list ul {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	max-height: 400px;
-	overflow-y: auto;
-}
-
-.packet-item {
-	background: white;
-	border: 1px solid #ddd;
-	padding: 0.75rem 1rem;
-	margin-bottom: 0.5rem;
-	display: flex;
-	justify-content: space-between;
-	gap: 1rem;
-	border-radius: 4px;
-	transition: background-color 0.2s ease;
-}
-
-.packet-item:hover {
-	background-color: #e9f5ff;
-}
-
-.packet-item span {
-	flex: 1 1 33%;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-#pack-listener-list {
-	list-style-type: none;
+#packet-inspector {
+	border-top: 4px solid gray;
 }

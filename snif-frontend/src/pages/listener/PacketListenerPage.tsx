@@ -41,8 +41,46 @@ function constructArpPacket(obj: any): ARPPacket {
 	);
 }
 
+function IPv4PacketInspector({ pack }: { pack: IPv4Packet }) {
+	return (
+		<details>
+			<summary>Internet Protocol Version 4</summary>
+			<div>
+				<p>
+					{pack.src}
+				</p>
+				<p>
+					{pack.dst}
+				</p>
+			</div>
+		</details>
+	);
+}
+
+function PacketInspector({ frame }: { frame: EtherFrame }) {
+	return (
+		<>
+		<details>
+			<summary>Ethernet II</summary>
+			<div>
+				<p>
+					{frame.source}
+				</p>
+				<p>
+					{frame.destination}
+				</p>
+			</div>
+		</details>
+		{frame.etherType == EtherType.IPV4 &&
+			<IPv4PacketInspector pack={frame.payload as IPv4Packet} />
+		}
+		</>
+	);
+}
+
 export default function PacketListenerPage() {
     const [packets, setPackets] = useState<EtherFrame[]>([]);
+	const [selectedPacket, setSelectedPacket] = useState<EtherFrame | undefined>(undefined);
 
 	useEffect(() => {
 		const interfaceName = "en0";
@@ -51,30 +89,35 @@ export default function PacketListenerPage() {
 		ws.onmessage = (event) => {
     		try {
 				const parsed = JSON.parse(event.data);
+				let frame: EtherFrame | null = null;
+
 				if (parsed["Payload Type"] === EtherType.IPV4) {
 					const ip = constructIpv4Pacekt(parsed['Payload']);
 					const etherType = parseInt(parsed['Payload Type']);
-					const frame: EtherFrame = {
+					frame = {
 						etherType,
 						destination: parsed['Destination'],
 						source: parsed['Source'],
 						payload: ip,
 						length: parsed['Length']
 					};
-					setPackets((prev) => [...prev, frame]);
 				}
 				else if (parsed['Payload Type'] === EtherType.ARP) {
 					const arp = constructArpPacket(parsed['Payload']);
-					console.log(arp);
 					const etherType = parseInt(parsed['Payload Type']);
-					const frame: EtherFrame = {
+					frame = {
 						etherType,
 						destination: parsed['Destination'],
 						source: parsed['Source'],
 						payload: arp,
 						length: parsed['Length']
 					};
-					setPackets((prev) => [...prev, frame]);
+				}
+				if (frame) {
+					setPackets(prev => {
+						const updated = [frame, ...prev];
+						return updated.slice(0, 50);
+					});
 				}
 			} catch (error) {
 				console.error("Failed to parse packet:", error);
@@ -89,7 +132,13 @@ export default function PacketListenerPage() {
 	const rendered = packets.map((packet) => {
 		if (packet.etherType === EtherType.IPV4) {
 			return (
-				<IPv4 ip={packet.payload as IPv4Packet} frameLen={packet.length} />
+				<IPv4 
+					ip={packet.payload as IPv4Packet} 
+					frameLen={packet.length}
+					onClick={() => {
+						setSelectedPacket(packet);
+					}}
+				/>
 			);
 		}
 		else if (packet.etherType == EtherType.ARP) {
@@ -100,21 +149,44 @@ export default function PacketListenerPage() {
 	});
 
 	return (
-		<div>
-			<table id="packet-list">
-				<thead>
-					<tr>
-						<th>Source</th>
-						<th>Destination</th>
-						<th>Protocol</th>
-						<th>Length</th>
-						<th>Info</th>
-					</tr>
-				</thead>
-				<tbody>
-					{rendered}	
-				</tbody>
-			</table>
+		<div style={{ 
+			height: '100vh', 
+			display: 'flex', 
+			flexDirection: 'column' 
+		}}>
+			<div 
+				id="packet-tbl-container" 
+				style={{ flex: 1, overflow: 'auto' }}
+			>
+				<table id="packet-tbl">
+					<thead>
+						<tr>
+							<th style={{ width: "20%" }}>Source</th>
+							<th style={{ width: "20%" }}>Destination</th>
+							<th style={{ width: "10%" }}>Protocol</th>
+							<th style={{ width: "10%" }}>Length</th>
+							<th style={{ width: "40%" }}>Info</th>
+						</tr>
+					</thead>
+					<tbody>
+						{rendered}
+					</tbody>
+				</table>
+			</div>
+
+			<div 
+				style={{ flex: 1, overflow: 'auto', padding: '0.5rem', fontFamily: 'monospace' }}
+				id="packet-inspector"
+			>
+				{selectedPacket === undefined && 
+					<div>
+						Select a packet to inspect.
+					</div>
+				}
+				{selectedPacket &&
+					<PacketInspector frame={selectedPacket} />
+				}
+			</div>
 		</div>
 	);
 }
