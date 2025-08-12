@@ -6,6 +6,7 @@ import { EtherType } from "../../packets/EtherFrame";
 import IPv4 from "./packets/IPv4";
 import ARPPacket from "../../packets/ARPPacket";
 import ARP from "./packets/ARP";
+import { useSearchParams } from "react-router";
 
 function constructIpv4Pacekt(obj: any): IPv4Packet {
 	return new IPv4Packet(
@@ -79,12 +80,28 @@ function PacketInspector({ frame }: { frame: EtherFrame }) {
 }
 
 export default function PacketListenerPage() {
+	const [searchParams] = useSearchParams();
     const [packets, setPackets] = useState<EtherFrame[]>([]);
 	const [selectedPacket, setSelectedPacket] = useState<EtherFrame | undefined>(undefined);
+	const [itface, setItface] = useState<string | null>(null);
+
+	if (itface === "" || itface === null) {
+		if (searchParams.get("__if")) {
+			setItface(searchParams.get("__if"));
+		}
+		else {
+			return (
+				<div>
+					<span>
+						Error: valid interface name was not provided!
+					</span>
+				</div>
+			);
+		}
+	}
 
 	useEffect(() => {
-		const interfaceName = "en0";
-		const ws = new WebSocket(`ws://localhost:12345/if/${interfaceName}`);
+		const ws = new WebSocket(`ws://localhost:12345/if/${itface}`);
 
 		ws.onmessage = (event) => {
     		try {

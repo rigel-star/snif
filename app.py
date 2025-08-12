@@ -4,6 +4,7 @@ from sniffer_api import *
 import websockets
 import asyncio
 
+all_ifs = []
 pkt_queues = {}
 clients = {}
 
@@ -37,9 +38,31 @@ def sniffer_thread(interface, loop):
                 continue
 
 
-async def handle_client(ws):
+async def handle_interface_list_reqs(ws):
+    try:
+        await ws.send(
+            json.dumps({
+                "ifs": all_ifs
+            })
+        )
+        await ws.close()
+    except Exception as e:
+        await ws.close()
+
+
+async def handle_packet_list_reqs(ws):
     global clients
-    interface = "en0"
+
+    interface = None
+    path = ws.request.path
+    print(interface)
+    
+    if path.startswith("/if/"):
+        interface = path[len("/if/"):]
+
+    if interface is None:
+        await ws.close()
+        return
 
     if interface not in clients:
         clients[interface] = set()
@@ -59,8 +82,24 @@ async def handle_client(ws):
         clients[interface].remove(ws)
 
 
+async def client_handler(ws):
+    if ws.request.path == "/ifs":
+        await handle_interface_list_reqs(ws)
+    elif ws.request.path.startswith("/if/"):
+        await handle_packet_list_reqs(ws)
+    else:
+        await ws.close()
+
+    
 async def main():
-    server = await websockets.serve(handle_client, 'localhost', 12345)
+    global all_ifs
+    try:
+        if_mgr = InterfaceManager()
+        all_ifs = if_mgr.get_all_ifs()
+    except Exception as e:
+        raise e
+
+    server = await websockets.serve(client_handler, 'localhost', 12345)
     await server.wait_closed()
 
 if __name__ == "__main__":

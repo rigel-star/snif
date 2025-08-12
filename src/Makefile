@@ -1,15 +1,27 @@
+EXT_LIBS = -lpcap
+
+CC = gcc
+BASE_FLAGS = -fPIC -Wall -Wextra -pedantic -ggdb -O3
+CC_FLAGS = -shared $(BASE_FLAGS)
+O_FLAGS = $(BASE_FLAGS)
+
+SRCS = $(wildcard *.c vendor/cJSON/*.c ip/*.c arp/*.c)
+OBJS = $(patsubst %.c, build/%.o, $(SRCS)) # ---> patsubst(pattern, replacement, text) = pattern substitute
+
+TARGET = ../lib/libsnif.so
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS) | ../lib
+	$(CC) $(CC_FLAGS) $(OBJS) $(EXT_LIBS) -o $@
+
+build/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $(O_FLAGS) $< -o $@
+
 ../lib:
 	mkdir -p ../lib
 
-CC_FLAGS=-shared -fPIC -Wall -Wextra -pedantic -ggdb -O2
-SRCS = $(wildcard *.c vendor/cJSON/*.c ip/*.c arp/*.c)
-TARGET=libsnif.so
-
-$(TARGET): $(SRCS)
-	gcc $(CC_FLAGS) $^ -lpcap -o ../lib/$@
-
 .PHONY: clean
 clean:
-	rm -f *.o
-	rm -f main
-	rm -f libsnif.so
+	rm -rf *.o main ../lib/$(notdir $(TARGET)) ./build

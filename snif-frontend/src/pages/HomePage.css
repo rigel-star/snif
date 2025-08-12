@@ -1,0 +1,34 @@
+.main-container {
+  color: #000;
+  font-family: 'Courier New', Courier, monospace;
+  min-height: 100vh;
+  padding: 1rem 2rem;
+  user-select: none;
+}
+
+.heading {
+  border-bottom: 1px solid #000;
+  padding-bottom: 0.5rem;
+}
+
+.interfaces-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  color: #000;
+  font-size: 1.1rem;
+}
+
+.interfaces-table th {
+  text-align: left;
+  border-bottom: 1px solid #000;
+}
+
+.interfaces-table td {
+  padding: 0.5rem 0;
+}
+
+.interfaces-table tbody tr:hover {
+    background-color: grey;
+    cursor: pointer;
+}
