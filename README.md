@@ -1,7 +1,4 @@
 # Snif - Packet Analyzer
 
-```console
-$ ./shell build
-$ ./shell start
-$ ./shell run
-```
+It looks like this right now:
+![Screenshot](https://i.imgur.com/763DuLF.png)
