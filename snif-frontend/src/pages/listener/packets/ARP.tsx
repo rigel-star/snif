@@ -1,14 +1,16 @@
 import type ARPPacket from "../../../packets/ARPPacket";
 import "./ARP.css";
 
-export interface ARPProps {
+import React from "react";
+
+export type ARPProps = {
     arp: ARPPacket,
 	frameLen: number,
-};
+} & React.HTMLAttributes<HTMLTableRowElement>;
 
-export default function IPv4({ arp, frameLen }: ARPProps) {
+export default function IPv4({ arp, frameLen, onClick }: ARPProps) {
 	return (
-		<tr>
+		<tr onClick={onClick}>
 			<td>
 				{arp.sha}
 			</td>
@@ -22,9 +24,16 @@ export default function IPv4({ arp, frameLen }: ARPProps) {
 				{frameLen}
 			</td>
 			<td>
-				<span>
-                    Who has {arp.tpa}? Tell {arp.spa}
-                </span>
+				{arp.op === 1 &&
+					<span>
+    		            Who has {arp.tpa}? Tell {arp.spa}
+					</span>
+				}
+				{arp.op === 2 &&
+					<span>
+    		            {arp.spa} it at {arp.sha}
+					</span>
+				}
 			</td>
 		</tr>
 	);

@@ -1,4 +1,5 @@
 import type IPv4Packet from "../../../packets/IPv4Packet";
+import { getIpProtocolName } from "../../../packets/IPv4Packet";
 import "./IPv4.css";
 
 import React from "react";
@@ -18,7 +19,7 @@ export default function IPv4({ ip, frameLen, onClick }: IPv4Props) {
 				{ip.dst}
 			</td>
 			<td>
-				IPv4
+				{getIpProtocolName(ip.proto)}
 			</td>
 			<td>
 				{frameLen}

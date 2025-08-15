@@ -1,15 +1,37 @@
 import { useState, useEffect } from "react";
 import "./PacketListenerPage.css";
 import type EtherFrame from "../../packets/EtherFrame";
-import IPv4Packet from "../../packets/IPv4Packet";
+import IPv4Packet, { IPv4Protocol } from "../../packets/IPv4Packet";
 import { EtherType } from "../../packets/EtherFrame";
 import IPv4 from "./packets/IPv4";
 import ARPPacket from "../../packets/ARPPacket";
 import ARP from "./packets/ARP";
 import { useSearchParams } from "react-router";
+import TCPPacket from "../../packets/TCPPack";
+import type Packet from "../../packets/Packet";
 
 function constructIpv4Pacekt(obj: any): IPv4Packet {
-	return new IPv4Packet(
+	let ipPayload: Packet | undefined = undefined;
+	const protocol = parseInt(obj['Protocol']);
+	if (protocol === IPv4Protocol.TCP) {
+		const pay = obj['Payload'];
+		ipPayload = new TCPPacket(
+			pay['Source Port'],
+			pay['Destination Port'],
+			pay['Sequence Number'],
+			pay['Acknowledgement Number'],
+			pay['Offset'],
+			pay['Reserved'],
+			pay['Flags'],
+			pay['Window'],
+			pay['Checksum'],
+			pay['Urgent'],
+			[],
+			"TCP"
+		);
+	}
+
+	const ip = new IPv4Packet(
 		obj['Version'],
 		obj['Internet Header Length'],
 		obj['Differentiated Services Code Point'],
@@ -23,8 +45,11 @@ function constructIpv4Pacekt(obj: any): IPv4Packet {
 		obj['Checksum'],
 		obj['Source'],
 		obj['Destination'],
-		'IPv4'
+		'IPv4',
+		ipPayload
 	);
+
+	return ip;
 }
 
 function constructArpPacket(obj: any): ARPPacket {
@@ -42,8 +67,25 @@ function constructArpPacket(obj: any): ARPPacket {
 	);
 }
 
+function TCPInspector({ pack }: { pack: TCPPacket }) {
+	return (
+		<details>
+			<summary>Transmission Control Protocol</summary>
+			<div>
+				<p>
+					{pack.sport}
+				</p>
+				<p>
+					{pack.dport}
+				</p>
+			</div>
+		</details>
+	);
+}
+
 function IPv4PacketInspector({ pack }: { pack: IPv4Packet }) {
 	return (
+		<>
 		<details>
 			<summary>Internet Protocol Version 4</summary>
 			<div>
@@ -55,6 +97,28 @@ function IPv4PacketInspector({ pack }: { pack: IPv4Packet }) {
 				</p>
 			</div>
 		</details>
+		{pack.proto === IPv4Protocol.TCP &&
+			<TCPInspector pack={pack.payload as TCPPacket} />
+		}
+		</>
+	);
+}
+
+function ARPInspector({ pack }: { pack: ARPPacket }) {
+	return (
+		<>
+		<details>
+			<summary>Address Resolution Protocol</summary>
+			<div>
+				<p>
+					{pack.sha}
+				</p>
+				<p>
+					{pack.tha}
+				</p>
+			</div>
+		</details>
+		</>
 	);
 }
 
@@ -72,8 +136,11 @@ function PacketInspector({ frame }: { frame: EtherFrame }) {
 				</p>
 			</div>
 		</details>
-		{frame.etherType == EtherType.IPV4 &&
+		{frame.etherType === EtherType.IPV4 &&
 			<IPv4PacketInspector pack={frame.payload as IPv4Packet} />
+		}
+		{frame.etherType === EtherType.ARP &&
+			<ARPInspector pack={frame.payload as ARPPacket} />
 		}
 		</>
 	);
@@ -110,9 +177,8 @@ export default function PacketListenerPage() {
 
 				if (parsed["Payload Type"] === EtherType.IPV4) {
 					const ip = constructIpv4Pacekt(parsed['Payload']);
-					const etherType = parseInt(parsed['Payload Type']);
 					frame = {
-						etherType,
+						etherType: EtherType.IPV4,
 						destination: parsed['Destination'],
 						source: parsed['Source'],
 						payload: ip,
@@ -121,9 +187,8 @@ export default function PacketListenerPage() {
 				}
 				else if (parsed['Payload Type'] === EtherType.ARP) {
 					const arp = constructArpPacket(parsed['Payload']);
-					const etherType = parseInt(parsed['Payload Type']);
 					frame = {
-						etherType,
+						etherType: EtherType.ARP,
 						destination: parsed['Destination'],
 						source: parsed['Source'],
 						payload: arp,
@@ -158,9 +223,15 @@ export default function PacketListenerPage() {
 				/>
 			);
 		}
-		else if (packet.etherType == EtherType.ARP) {
+		else if (packet.etherType === EtherType.ARP) {
 			return (
-				<ARP arp={packet.payload as ARPPacket} frameLen={packet.length} />
+				<ARP 
+					arp={packet.payload as ARPPacket} 
+					frameLen={packet.length} 
+					onClick={() => {
+						setSelectedPacket(packet);
+					}}
+				/>
 			);
 		}
 	});
