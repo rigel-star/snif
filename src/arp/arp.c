@@ -3,11 +3,11 @@
 char* parse_arp_to_json(const ARP_t *arp) {
     cJSON *arp_json = cJSON_CreateObject();
 
-    cJSON_AddNumberToObject(arp_json, "Hardware Type", arp->htype);
-    cJSON_AddNumberToObject(arp_json, "Protocol Type", arp->ptype);
+    cJSON_AddNumberToObject(arp_json, "Hardware Type", ntohs(arp->htype));
+    cJSON_AddNumberToObject(arp_json, "Protocol Type", ntohs(arp->ptype));
     cJSON_AddNumberToObject(arp_json, "Hardware Length", arp->hlen);
     cJSON_AddNumberToObject(arp_json, "Protocol Length", arp->plen);
-    cJSON_AddNumberToObject(arp_json, "Operation", arp->op);
+    cJSON_AddNumberToObject(arp_json, "Operation", ntohs(arp->op));
 
     char sender_mac[18], receiver_mac[18];
     snprintf(

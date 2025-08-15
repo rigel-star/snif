@@ -7,3 +7,4 @@ bin/
 CACHEDIR.TAG
 pyvenv.cfg
 **/.DS_Store
+src/build

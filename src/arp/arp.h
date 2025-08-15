@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <arpa/inet.h>
 #include "../vendor/cJSON/cJSON.h"
 
 typedef struct __attribute__((__packed__)) ARP {

@@ -4,7 +4,7 @@ char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest) {
     char* rest_parsed = NULL;
     
     if (eth_header->type == ETHER_TYPE_IPV4) {
-        rest_parsed = parse_ipv4_to_json((const IPv4_t *) rest);
+        rest_parsed = parse_ipv4_to_json(rest);
     }
     else if (eth_header->type == ETHER_TYPE_ARP) {
         rest_parsed = parse_arp_to_json((const ARP_t*) rest);

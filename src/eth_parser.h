@@ -23,7 +23,6 @@ typedef struct EtherHeader {
     int32_t len;
 } EtherHeader_t;
 
-char* parse_ipv4_to_json(const IPv4_t *ip);
 char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest);
 char* parse_pkt_to_json(const u_char *packet, int len);
 

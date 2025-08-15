@@ -2,9 +2,13 @@
 #define IPV4_HEADER_H
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <stdio.h>
 
+/**
+ * IPv4 header
+ */
 typedef struct __attribute__((packed)) IPv4 {
     uint8_t     ver_ihl;
     uint8_t     dscp_ecn;
@@ -68,6 +72,24 @@ _Static_assert(sizeof(IPv4_t) == 20, "IPv4_t must be 20 bytes");
 #define IPV4_PROTOCOL_NAME(code) IPV4_PROTOCOL_NAME_##code
 
 char* ipv4_proto_name(uint16_t proto);
-char* parse_ipv4_to_json(const IPv4_t *ip);
+char* parse_ipv4_to_json(const u_char *data);
+
+/**
+ * TCP header
+ */
+typedef struct __attribute__((packed)) TCP {
+    uint16_t    sport;
+    uint16_t    dport;
+    uint32_t    seq;
+    uint32_t    ack;
+    uint8_t     off_res;
+    uint8_t     flags;
+    uint16_t    win;
+    uint16_t    chk;
+    uint16_t    urg;
+    uint8_t     options[];
+} TCP_t;
+
+char* parse_tcp_to_json(const u_char* data);
 
 #endif
