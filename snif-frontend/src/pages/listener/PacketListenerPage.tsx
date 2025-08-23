@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import "./PacketListenerPage.css";
 import type EtherFrame from "../../packets/EtherFrame";
 import IPv4Packet, { IPv4Protocol } from "../../packets/IPv4Packet";
@@ -9,6 +9,7 @@ import ARP from "./packets/ARP";
 import { useSearchParams } from "react-router";
 import TCPPacket from "../../packets/TCPPack";
 import type Packet from "../../packets/Packet";
+import ToolBar from "./ToolBar";
 
 function constructIpv4Pacekt(obj: any): IPv4Packet {
 	let ipPayload: Packet | undefined = undefined;
@@ -152,6 +153,8 @@ export default function PacketListenerPage() {
 	const [selectedPacket, setSelectedPacket] = useState<EtherFrame | undefined>(undefined);
 	const [itface, setItface] = useState<string | null>(null);
 
+	const sockRef = useRef<WebSocket | null>(null);
+
 	if (itface === "" || itface === null) {
 		if (searchParams.get("__if")) {
 			setItface(searchParams.get("__if"));
@@ -167,11 +170,16 @@ export default function PacketListenerPage() {
 		}
 	}
 
-	useEffect(() => {
+	const startConnection = () => {
+		if (sockRef.current) {
+			return;
+		}
+
 		const ws = new WebSocket(`ws://localhost:12345/if/${itface}`);
+		sockRef.current = ws;
 
 		ws.onmessage = (event) => {
-    		try {
+			try {
 				const parsed = JSON.parse(event.data);
 				let frame: EtherFrame | null = null;
 
@@ -204,12 +212,12 @@ export default function PacketListenerPage() {
 			} catch (error) {
 				console.error("Failed to parse packet:", error);
 			}
-		};
+		}
 
-		return () => {
-			ws.close();
-		};
-	}, []);
+		ws.onclose = () => {
+			sockRef.current = null;
+		}
+	}
 
 	const rendered = packets.map((packet) => {
 		if (packet.etherType === EtherType.IPV4) {
@@ -242,6 +250,18 @@ export default function PacketListenerPage() {
 			display: 'flex', 
 			flexDirection: 'column' 
 		}}>
+			<ToolBar 
+				onStart={() => {
+					setPackets([]);
+					startConnection();
+				}}
+
+				onStop={() => {
+					if (sockRef.current) {
+						sockRef.current.close();
+					}
+				}}
+			/>
 			<div 
 				id="packet-tbl-container" 
 				style={{ flex: 1, overflow: 'auto' }}
