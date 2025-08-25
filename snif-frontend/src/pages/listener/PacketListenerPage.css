@@ -8,7 +8,7 @@
 }
 
 #packet-tbl th {
-	background-color: gray;
+	background-color: rgb(177, 175, 175);
 }
 
 #packet-tbl tbody tr {

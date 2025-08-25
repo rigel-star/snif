@@ -4,13 +4,17 @@ import "./ARP.css";
 import React from "react";
 
 export type ARPProps = {
+	index: number;
     arp: ARPPacket,
 	frameLen: number,
 } & React.HTMLAttributes<HTMLTableRowElement>;
 
-export default function IPv4({ arp, frameLen, onClick }: ARPProps) {
+export default function IPv4({ arp, frameLen, onClick, index }: ARPProps) {
 	return (
 		<tr onClick={onClick}>
+			<td className="p-2">
+				{index}
+			</td>
 			<td>
 				{arp.sha}
 			</td>

@@ -10,6 +10,8 @@ import { useSearchParams } from "react-router";
 import TCPPacket from "../../packets/TCPPack";
 import type Packet from "../../packets/Packet";
 import ToolBar from "./ToolBar";
+import IPv4Inspector from "./inspectors/IPV4Inspector";
+import FilterPipeline from "./FilterPipeline";
 
 function constructIpv4Pacekt(obj: any): IPv4Packet {
 	let ipPayload: Packet | undefined = undefined;
@@ -68,43 +70,6 @@ function constructArpPacket(obj: any): ARPPacket {
 	);
 }
 
-function TCPInspector({ pack }: { pack: TCPPacket }) {
-	return (
-		<details>
-			<summary>Transmission Control Protocol</summary>
-			<div>
-				<p>
-					{pack.sport}
-				</p>
-				<p>
-					{pack.dport}
-				</p>
-			</div>
-		</details>
-	);
-}
-
-function IPv4PacketInspector({ pack }: { pack: IPv4Packet }) {
-	return (
-		<>
-		<details>
-			<summary>Internet Protocol Version 4</summary>
-			<div>
-				<p>
-					{pack.src}
-				</p>
-				<p>
-					{pack.dst}
-				</p>
-			</div>
-		</details>
-		{pack.proto === IPv4Protocol.TCP &&
-			<TCPInspector pack={pack.payload as TCPPacket} />
-		}
-		</>
-	);
-}
-
 function ARPInspector({ pack }: { pack: ARPPacket }) {
 	return (
 		<>
@@ -138,7 +103,7 @@ function PacketInspector({ frame }: { frame: EtherFrame }) {
 			</div>
 		</details>
 		{frame.etherType === EtherType.IPV4 &&
-			<IPv4PacketInspector pack={frame.payload as IPv4Packet} />
+			<IPv4Inspector pack={frame.payload as IPv4Packet} />
 		}
 		{frame.etherType === EtherType.ARP &&
 			<ARPInspector pack={frame.payload as ARPPacket} />
@@ -175,7 +140,7 @@ export default function PacketListenerPage() {
 			return;
 		}
 
-		const ws = new WebSocket(`ws://localhost:12345/if/${itface}`);
+		const ws = new WebSocket(`ws://localhost:12346/if/${itface}`);
 		sockRef.current = ws;
 
 		ws.onmessage = (event) => {
@@ -205,8 +170,8 @@ export default function PacketListenerPage() {
 				}
 				if (frame) {
 					setPackets(prev => {
-						const updated = [frame, ...prev];
-						return updated.slice(0, 50);
+						const updated = [...prev, frame];
+						return updated;
 					});
 				}
 			} catch (error) {
@@ -219,7 +184,7 @@ export default function PacketListenerPage() {
 		}
 	}
 
-	const rendered = packets.map((packet) => {
+	const rendered = packets.map((packet, index) => {
 		if (packet.etherType === EtherType.IPV4) {
 			return (
 				<IPv4 
@@ -228,12 +193,14 @@ export default function PacketListenerPage() {
 					onClick={() => {
 						setSelectedPacket(packet);
 					}}
+					index={index + 1}
 				/>
 			);
 		}
 		else if (packet.etherType === EtherType.ARP) {
 			return (
 				<ARP 
+					index={index + 1}
 					arp={packet.payload as ARPPacket} 
 					frameLen={packet.length} 
 					onClick={() => {
@@ -245,11 +212,9 @@ export default function PacketListenerPage() {
 	});
 
 	return (
-		<div style={{ 
-			height: '100vh', 
-			display: 'flex', 
-			flexDirection: 'column' 
-		}}>
+		<div 
+			className="flex flex-col h-screen p-2"
+		>
 			<ToolBar 
 				onStart={() => {
 					setPackets([]);
@@ -261,19 +226,31 @@ export default function PacketListenerPage() {
 						sockRef.current.close();
 					}
 				}}
+
+				onApply={(filters) => {
+					const pipeline = new FilterPipeline(packets, filters);
+					const updatedPackets = pipeline.filter();
+					if (updatedPackets !== undefined) {
+						setPackets(updatedPackets);
+					}
+				}}
 			/>
 			<div 
-				id="packet-tbl-container" 
-				style={{ flex: 1, overflow: 'auto' }}
+				id="packet-tbl-container"
+				className="flex-1 overflow-auto"
 			>
-				<table id="packet-tbl">
+				<table 
+					id="packet-tbl"
+					className="shadow-sm"
+				>
 					<thead>
-						<tr>
+						<tr className="h-5 text-black rounded-sm">
+							<th className="rounded-tl-sm rounded-bl-sm" style={{ width: "5%" }}>No.</th>
 							<th style={{ width: "20%" }}>Source</th>
 							<th style={{ width: "20%" }}>Destination</th>
 							<th style={{ width: "10%" }}>Protocol</th>
 							<th style={{ width: "10%" }}>Length</th>
-							<th style={{ width: "40%" }}>Info</th>
+							<th className="rounded-tr-sm rounded-br-sm" style={{ width: "35%" }}>Info</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -283,8 +260,9 @@ export default function PacketListenerPage() {
 			</div>
 
 			<div 
-				style={{ flex: 1, overflow: 'auto', padding: '0.5rem', fontFamily: 'monospace' }}
+				style={{ padding: '0.5rem' }}
 				id="packet-inspector"
+				className="flex-1 overflow-auto font-mono"
 			>
 				{selectedPacket === undefined && 
 					<div>
