@@ -57,7 +57,6 @@ OUT_BUF_SIZE = 4096
 class Sniffer:
     def __init__(self, device: str):
         self.handle = lib.snif_open(device.encode('utf-8'))
-        print(f"Listening on {device}")
         if not self.handle:
             raise RuntimeError(f"Failed to open device {device}")
 

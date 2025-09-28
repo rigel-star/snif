@@ -79,7 +79,6 @@ async def handle_packet_list_reqs(ws):
 
     interface = None
     path = ws.request.path
-    print(interface)
     
     if path.startswith("/if/"):
         interface = path[len("/if/"):]
@@ -90,6 +89,8 @@ async def handle_packet_list_reqs(ws):
 
     if interface not in clients:
         clients[interface] = set()
+
+    print(f"Serving {interface}'s data...")
 
     clients[interface].add(ws)
     if interface not in pkt_queues:
@@ -108,7 +109,9 @@ async def handle_packet_list_reqs(ws):
 
 async def client_handler(ws):
     if ws.request.path == "/ifs":
+        print("Serving interfaces names...", end="")
         await handle_interface_list_reqs(ws)
+        print("DONE")
     elif ws.request.path.startswith("/if/"):
         await handle_packet_list_reqs(ws)
     else:
@@ -123,8 +126,12 @@ async def main():
     except Exception as e:
         raise e
 
-    server = await websockets.serve(client_handler, 'localhost', 12346)
+    server = await websockets.serve(client_handler, '127.0.0.1', 12346)
     await server.wait_closed()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+        print("Started the sniffer...")
+    except KeyboardInterrupt as e:
+        print(e)

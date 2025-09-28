@@ -1,9 +1,17 @@
+OS = $(shell uname)
 EXT_LIBS = -lpcap
-
-CC = gcc
 BASE_FLAGS = -fPIC -Wall -Wextra -pedantic -ggdb -O3
-CC_FLAGS = -shared $(BASE_FLAGS)
-O_FLAGS = $(BASE_FLAGS)
+O_FLAGS := $(BASE_FLAGS)
+
+ifeq ($(OS),Darwin)
+	COMPILE_MSG = "====Compiling for MacOS===="
+	CC = clang
+	CC_FLAGS = -framework SystemConfiguration -framework CoreFoundation -shared $(BASE_FLAGS)
+else
+	COMPILE_MSG = "====Compiling for Linux===="
+	CC = gcc
+	CC_FLAGS = -shared $(BASE_FLAGS)
+endif
 
 SRCS = $(wildcard *.c vendor/cJSON/*.c ip/*.c arp/*.c)
 OBJS = $(patsubst %.c, build/%.o, $(SRCS)) # ---> patsubst(pattern, replacement, text) = pattern substitute
@@ -13,6 +21,7 @@ TARGET = ../lib/libsnif.so
 all: $(TARGET)
 
 $(TARGET): $(OBJS) | ../lib
+	@echo $(COMPILE_MSG)
 	$(CC) $(CC_FLAGS) $(OBJS) $(EXT_LIBS) -o $@
 
 build/%.o: %.c

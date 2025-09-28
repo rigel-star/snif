@@ -10,8 +10,8 @@ import { useSearchParams } from "react-router";
 import TCPPacket from "../../packets/TCPPack";
 import type Packet from "../../packets/Packet";
 import ToolBar from "./ToolBar";
-import IPv4Inspector from "./inspectors/IPV4Inspector";
-import FilterPipeline from "./FilterPipeline";
+import FilterPipeline, { stringsToFilters } from "./FilterPipeline";
+import EthernetInspector from "./inspectors/EthernetInspector";
 
 function constructIpv4Pacekt(obj: any): IPv4Packet {
 	let ipPayload: Packet | undefined = undefined;
@@ -67,48 +67,6 @@ function constructArpPacket(obj: any): ARPPacket {
 		obj['Target Hardware Address'],
 		obj['Target Protocol Address'],
 		"ARP"
-	);
-}
-
-function ARPInspector({ pack }: { pack: ARPPacket }) {
-	return (
-		<>
-		<details>
-			<summary>Address Resolution Protocol</summary>
-			<div>
-				<p>
-					{pack.sha}
-				</p>
-				<p>
-					{pack.tha}
-				</p>
-			</div>
-		</details>
-		</>
-	);
-}
-
-function PacketInspector({ frame }: { frame: EtherFrame }) {
-	return (
-		<>
-		<details>
-			<summary>Ethernet II</summary>
-			<div>
-				<p>
-					{frame.source}
-				</p>
-				<p>
-					{frame.destination}
-				</p>
-			</div>
-		</details>
-		{frame.etherType === EtherType.IPV4 &&
-			<IPv4Inspector pack={frame.payload as IPv4Packet} />
-		}
-		{frame.etherType === EtherType.ARP &&
-			<ARPInspector pack={frame.payload as ARPPacket} />
-		}
-		</>
 	);
 }
 
@@ -228,8 +186,8 @@ export default function PacketListenerPage() {
 				}}
 
 				onApply={(filters) => {
-					const pipeline = new FilterPipeline(packets, filters);
-					const updatedPackets = pipeline.filter();
+					const pipeline = new FilterPipeline(packets);
+					const updatedPackets = pipeline.filter(stringsToFilters(filters));
 					if (updatedPackets !== undefined) {
 						setPackets(updatedPackets);
 					}
@@ -270,7 +228,7 @@ export default function PacketListenerPage() {
 					</div>
 				}
 				{selectedPacket &&
-					<PacketInspector frame={selectedPacket} />
+					<EthernetInspector frame={selectedPacket} />
 				}
 			</div>
 		</div>

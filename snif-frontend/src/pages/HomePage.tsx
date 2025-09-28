@@ -4,13 +4,14 @@ import { Link } from "react-router";
 
 interface NetworkInterface {
     name: string;
+    isWireless: boolean;
 }
 
 export default function HomePage() {
     const [interfaces, setInterfaces] = useState<NetworkInterface[]>([]);
 
     useEffect(() => {
-        const ws = new WebSocket(`ws://localhost:12345/ifs`);
+        const ws = new WebSocket(`ws://localhost:12346/ifs`);
 
         ws.onmessage = (event) => {
             try {
@@ -19,7 +20,8 @@ export default function HomePage() {
                     const _ifs = [];
                     for (let inter of ifs['ifs']) {
                         _ifs.push({
-                            name: inter
+                            name: inter.replace("(Wi-Fi)", ""),
+                            isWireless: inter.includes("(Wi-Fi)")
                         });
                     }
                     setInterfaces(_ifs);
@@ -41,7 +43,7 @@ export default function HomePage() {
                     </tr>
                 </thead>
                 <tbody>
-                    {interfaces.map(({ name }) => (
+                    {interfaces.map(({ name, isWireless }) => (
                         <tr 
                             key={name}
                             onClick={() => {
@@ -50,7 +52,7 @@ export default function HomePage() {
                         >
                             <td>
                                 <Link to={`/if?__if=${name}`}>
-                                    {name}
+                                    {name} {isWireless ? "(Wi-Fi)" : ""}
                                 </Link>
                             </td>
                         </tr>
