@@ -10,7 +10,6 @@ char* parse_ether_frame_to_json(EtherHeader_t *eth_header, const u_char *rest) {
         rest_parsed = parse_arp_to_json((const ARP_t*) rest);
     }
     else {
-        // fprintf(stderr, "Unsupported Ethertype: 0x%04x\n", eth_header->type);
         return NULL;
     }
 

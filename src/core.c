@@ -105,10 +105,7 @@ int is_wireless(const char *ifname) {
 
     return result != -1;
 }
-
-
 #elif __APPLE__
-
 #include <SystemConfiguration/SystemConfiguration.h>
 #include <CoreFoundation/CoreFoundation.h>
 

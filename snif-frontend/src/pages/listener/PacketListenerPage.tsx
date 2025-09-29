@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import "./PacketListenerPage.css";
 import type EtherFrame from "../../packets/EtherFrame";
 import IPv4Packet, { IPv4Protocol } from "../../packets/IPv4Packet";
@@ -10,7 +10,6 @@ import { useSearchParams } from "react-router";
 import TCPPacket from "../../packets/TCPPack";
 import type Packet from "../../packets/Packet";
 import ToolBar from "./ToolBar";
-import FilterPipeline, { stringsToFilters } from "./FilterPipeline";
 import EthernetInspector from "./inspectors/EthernetInspector";
 
 function constructIpv4Pacekt(obj: any): IPv4Packet {
@@ -75,6 +74,7 @@ export default function PacketListenerPage() {
     const [packets, setPackets] = useState<EtherFrame[]>([]);
 	const [selectedPacket, setSelectedPacket] = useState<EtherFrame | undefined>(undefined);
 	const [itface, setItface] = useState<string | null>(null);
+    const [filters, setFilters] = useState<string[]>([]);
 
 	const sockRef = useRef<WebSocket | null>(null);
 
@@ -142,6 +142,12 @@ export default function PacketListenerPage() {
 		}
 	}
 
+ 	useEffect(() => {
+        if (sockRef.current && sockRef.current.readyState === WebSocket.OPEN) {
+            sockRef.current.send(JSON.stringify({ type: "filters_update", filters }));
+        }
+    }, [filters]);
+
 	const rendered = packets.map((packet, index) => {
 		if (packet.etherType === EtherType.IPV4) {
 			return (
@@ -185,13 +191,7 @@ export default function PacketListenerPage() {
 					}
 				}}
 
-				onApply={(filters) => {
-					const pipeline = new FilterPipeline(packets);
-					const updatedPackets = pipeline.filter(stringsToFilters(filters));
-					if (updatedPackets !== undefined) {
-						setPackets(updatedPackets);
-					}
-				}}
+				onApply={(filters) => setFilters(filters)}
 			/>
 			<div 
 				id="packet-tbl-container"

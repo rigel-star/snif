@@ -23,106 +23,149 @@ SOFTWARE.
 '''
 
 import threading
-from ctypes import *
-from sniffer_api import *
+import json
 import websockets
 import asyncio
 
-all_ifs = []
-pkt_queues = {}
-clients = {}
+# Sniffer library
+from sniffer_api import InterfaceManager, Sniffer
+
+all_interfaces = []
+interface_packet_queues = {}
+connected_clients = {}
 
 async def broadcast(interface: str):
     while True:
-        pkt = await pkt_queues[interface].get()
-        if interface in clients:
+        packet = await interface_packet_queues[interface].get()
+        if interface in connected_clients:
             dead_clients = set()
-            for ws in clients[interface]:
+            for w_sock in connected_clients[interface]:
                 try:
-                    await ws.send(json.dumps(pkt))
+                    await w_sock.send(json.dumps(packet))
                 except:
-                    dead_clients.add(ws)
-            clients[interface] -= dead_clients
+                    dead_clients.add(w_sock)
+            connected_clients[interface] -= dead_clients
 
 
-def sniffer_thread(interface, loop):
-    global pkt_queues
+def should_include_payload(filters, packet):
+    if filters and len(filters) == 0:
+        return True
+
+    payload_type = packet.get('Payload Type')
+    if payload_type in filters:
+        return True
+
+    payload = packet.get('Payload')
+    while True:
+        if payload is None:
+            return False
+        elif payload.get('Payload Type') in filters:
+            return True
+
+        payload = payload.get('Payload')
+
+
+def sniffer_thread(interface, filters: list[str], loop):
+    global interface_packet_queues
 
     snif = Sniffer(interface)
     while True:
-        pkt = snif.next_packet()
-        if pkt is not None:
+        packet = snif.next_packet()
+        if packet is not None:
             try:
-                pkt_json = json.loads(pkt)
-                asyncio.run_coroutine_threadsafe(
-                    pkt_queues[interface].put(pkt_json),
-                    loop
-                )
+                packet_json = json.loads(packet)
+                if should_include_payload(filters, packet_json):
+                    asyncio.run_coroutine_threadsafe(
+                        interface_packet_queues[interface].put(packet_json),
+                        loop
+                    )
             except json.JSONDecodeError:
                 continue
 
 
-async def handle_interface_list_reqs(ws):
+async def handle_interface_list_reqs(w_socket):
     try:
-        await ws.send(
+        await w_socket.send(
             json.dumps({
-                "ifs": all_ifs
+                "ifs": all_interfaces
             })
         )
-        await ws.close()
+        await w_socket.close()
     except Exception as e:
-        await ws.close()
+        await w_socket.close()
 
 
-async def handle_packet_list_reqs(ws):
-    global clients
+async def parse_filters(w_socket, filters_q):
+    async for message in w_socket:
+        data = json.loads(message)
+        if data.get("type") == "filters_update":
+            await filters_q.put(data["filters"])
+
+
+async def handle_packet_list_reqs(w_socket):
+    filters_q = asyncio.Queue()
+    asyncio.create_task(parse_filters(w_socket, filters_q))
 
     interface = None
-    path = ws.request.path
+    path = w_socket.request.path
+
+    global connected_clients
     
     if path.startswith("/if/"):
         interface = path[len("/if/"):]
 
     if interface is None:
-        await ws.close()
+        await w_socket.close()
         return
 
-    if interface not in clients:
-        clients[interface] = set()
+    if interface not in connected_clients:
+        connected_clients[interface] = set()
 
     print(f"Serving {interface}'s data...")
 
-    clients[interface].add(ws)
-    if interface not in pkt_queues:
-        pkt_queues[interface] = asyncio.Queue()
+    connected_clients[interface].add(w_socket)
+    if interface_packet_queues.get(interface) is None:
+        interface_packet_queues[interface] = asyncio.Queue()
         loop = asyncio.get_running_loop()
-        threading.Thread(target=sniffer_thread, args=(interface, loop), daemon=True).start()
+
+        try:
+            filters = filters_q.get_nowait()
+        except asyncio.QueueEmpty:
+            filters = []
+        print(f"Applying filters: {filters}")
+
+        threading.Thread(
+            target=sniffer_thread, 
+            args=(interface, filters, loop), 
+            daemon=True
+        ).start()
+        
         asyncio.create_task(broadcast(interface))
 
     try:
-        async for msg in ws:
+        async for msg in w_socket:
             pass
     finally:
-        await ws.close()
-        clients[interface].remove(ws)
+        await w_socket.close()
+        connected_clients[interface].remove(w_socket)
 
 
-async def client_handler(ws):
-    if ws.request.path == "/ifs":
+async def client_handler(w_socket):
+    if w_socket.request.path == "/ifs":
         print("Serving interfaces names...", end="")
-        await handle_interface_list_reqs(ws)
+        await handle_interface_list_reqs(w_socket)
         print("DONE")
-    elif ws.request.path.startswith("/if/"):
-        await handle_packet_list_reqs(ws)
+    elif w_socket.request.path.startswith("/if/"):
+        await handle_packet_list_reqs(w_socket)
     else:
-        await ws.close()
+        await w_socket.close()
 
     
 async def main():
-    global all_ifs
+    global all_interfaces
     try:
-        if_mgr = InterfaceManager()
-        all_ifs = if_mgr.get_all_ifs()
+        interface_mgr = InterfaceManager()
+        all_interfaces = interface_mgr.get_all_interface_names()
     except Exception as e:
         raise e
 

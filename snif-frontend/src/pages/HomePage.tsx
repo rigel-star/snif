@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./HomePage.css";
 import { Link } from "react-router";
 
@@ -9,9 +9,11 @@ interface NetworkInterface {
 
 export default function HomePage() {
     const [interfaces, setInterfaces] = useState<NetworkInterface[]>([]);
+    const wsRef = useRef<WebSocket>(null);
 
     useEffect(() => {
         const ws = new WebSocket(`ws://localhost:12346/ifs`);
+        wsRef.current = ws;
 
         ws.onmessage = (event) => {
             try {
@@ -30,6 +32,10 @@ export default function HomePage() {
             catch (err) {
                 console.error(err);
             }
+        };
+
+        return () => {
+            ws.close();
         };
     }, []);
 
