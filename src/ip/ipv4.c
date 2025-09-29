@@ -50,6 +50,7 @@ char* parse_tcp_to_json(const u_char* data) {
     cJSON_AddNumberToObject(tcp_json, "Window", window);
     cJSON_AddNumberToObject(tcp_json, "Checksum", chk);
     cJSON_AddNumberToObject(tcp_json, "Urgent Pointer", urg);
+    cJSON_AddNumberToObject(tcp_json, "Payload Type", IPV4_TCP); // used by the frontend
 
     char* json_string = cJSON_PrintUnformatted(tcp_json);
     cJSON_Delete(tcp_json);
@@ -86,6 +87,7 @@ char* parse_ipv4_to_json(const u_char* data) {
     cJSON_AddNumberToObject(ip_json, "Offset", offset);
     cJSON_AddNumberToObject(ip_json, "Time to Live", ip->ttl);
     cJSON_AddNumberToObject(ip_json, "Protocol", ip->proto);
+    cJSON_AddNumberToObject(ip_json, "Payload Type", ip->proto); // used by the frontend
     cJSON_AddNumberToObject(ip_json, "Checksum", ntohs(ip->chk));
 
     char src_ip[16], dst_ip[16];

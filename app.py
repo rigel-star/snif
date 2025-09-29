@@ -29,12 +29,13 @@ import asyncio
 
 # Sniffer library
 from sniffer_api import InterfaceManager, Sniffer
+from net_consts import ALL_PAYLOAD_TYPES
 
 all_interfaces = []
 interface_packet_queues = {}
 connected_clients = {}
 
-async def broadcast(interface: str):
+async def broadcast_packets(interface: str):
     while True:
         packet = await interface_packet_queues[interface].get()
         if interface in connected_clients:
@@ -59,13 +60,15 @@ def should_include_payload(filters, packet):
     while True:
         if payload is None:
             return False
-        elif payload.get('Payload Type') in filters:
-            return True
+        else:
+            payload_type = payload.get('Payload Type')
+            if payload_type and ALL_PAYLOAD_TYPES.get(int(payload_type)):
+                return True
 
         payload = payload.get('Payload')
 
 
-def sniffer_thread(interface, filters: list[str], loop):
+def sniffer_thread(interface: str, filters: list[str], loop):
     global interface_packet_queues
 
     snif = Sniffer(interface)
@@ -79,6 +82,8 @@ def sniffer_thread(interface, filters: list[str], loop):
                         interface_packet_queues[interface].put(packet_json),
                         loop
                     )
+                else:
+                    print("Skip: ", packet_json)
             except json.JSONDecodeError:
                 continue
 
@@ -95,17 +100,8 @@ async def handle_interface_list_reqs(w_socket):
         await w_socket.close()
 
 
-async def parse_filters(w_socket, filters_q):
-    async for message in w_socket:
-        data = json.loads(message)
-        if data.get("type") == "filters_update":
-            await filters_q.put(data["filters"])
-
-
 async def handle_packet_list_reqs(w_socket):
     filters_q = asyncio.Queue()
-    asyncio.create_task(parse_filters(w_socket, filters_q))
-
     interface = None
     path = w_socket.request.path
 
@@ -132,7 +128,6 @@ async def handle_packet_list_reqs(w_socket):
             filters = filters_q.get_nowait()
         except asyncio.QueueEmpty:
             filters = []
-        print(f"Applying filters: {filters}")
 
         threading.Thread(
             target=sniffer_thread, 
@@ -140,11 +135,17 @@ async def handle_packet_list_reqs(w_socket):
             daemon=True
         ).start()
         
-        asyncio.create_task(broadcast(interface))
+        asyncio.create_task(broadcast_packets(interface))
 
     try:
-        async for msg in w_socket:
-            pass
+        async for message in w_socket:
+            try:
+                data = json.loads(message)
+            except json.JSONDecodeError:
+                continue
+
+            if data.get("type") == "filters_update":
+                await filters_q.put(data["filters"])
     finally:
         await w_socket.close()
         connected_clients[interface].remove(w_socket)
