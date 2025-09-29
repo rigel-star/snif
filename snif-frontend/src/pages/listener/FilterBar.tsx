@@ -29,7 +29,7 @@ export default function FilterBar(props: FilterBarProps) {
                 }}
 			/>
             <button 
-                className="bg-blue-500 rounded-sm px-3 py-1 text-white"
+                className="bg-blue-500 rounded-sm px-3 py-1 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 cursor-pointer"
                 onClick={() => {
                     if (props.onApply) {
                         props.onApply(processFilters());

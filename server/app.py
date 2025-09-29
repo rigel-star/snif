@@ -49,11 +49,7 @@ async def broadcast_packets(interface: str):
 
 
 def should_include_payload(filters, packet):
-    if filters and len(filters) == 0:
-        return True
-
-    payload_type = packet.get('Payload Type')
-    if payload_type in filters:
+    if len(filters) == 0:
         return True
 
     payload = packet.get('Payload')
@@ -62,28 +58,38 @@ def should_include_payload(filters, packet):
             return False
         else:
             payload_type = payload.get('Payload Type')
-            if payload_type and ALL_PAYLOAD_TYPES.get(int(payload_type)):
-                return True
+            if payload_type:
+                pkt_payload_type = ALL_PAYLOAD_TYPES.get(int(payload_type))
+                if pkt_payload_type in filters:
+                    return True
+                else:
+                    pass
 
         payload = payload.get('Payload')
 
 
-def sniffer_thread(interface: str, filters: list[str], loop):
+def sniffer_thread(interface: str, filters_q: asyncio.Queue[str], loop):
     global interface_packet_queues
 
     snif = Sniffer(interface)
+    filters = []
+
     while True:
         packet = snif.next_packet()
         if packet is not None:
             try:
                 packet_json = json.loads(packet)
+
+                try:
+                    filters = filters_q.get_nowait()
+                except asyncio.QueueEmpty:
+                    pass
+
                 if should_include_payload(filters, packet_json):
                     asyncio.run_coroutine_threadsafe(
                         interface_packet_queues[interface].put(packet_json),
                         loop
                     )
-                else:
-                    print("Skip: ", packet_json)
             except json.JSONDecodeError:
                 continue
 
@@ -131,7 +137,7 @@ async def handle_packet_list_reqs(w_socket):
 
         threading.Thread(
             target=sniffer_thread, 
-            args=(interface, filters, loop), 
+            args=(interface, filters_q, loop), 
             daemon=True
         ).start()
         

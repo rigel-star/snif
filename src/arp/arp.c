@@ -5,7 +5,7 @@ char* parse_arp_to_json(const ARP_t *arp) {
 
     cJSON_AddNumberToObject(arp_json, "Hardware Type", ntohs(arp->htype));
     cJSON_AddNumberToObject(arp_json, "Protocol Type", ntohs(arp->ptype));
-    cJSON_AddNumberToObject(arp_json, "Payload Type", ntohs(arp->ptype)); // used by the frontend
+    cJSON_AddNumberToObject(arp_json, "Payload Type", 0x0806); // used by the frontend
     cJSON_AddNumberToObject(arp_json, "Hardware Length", arp->hlen);
     cJSON_AddNumberToObject(arp_json, "Protocol Length", arp->plen);
     cJSON_AddNumberToObject(arp_json, "Operation", ntohs(arp->op));

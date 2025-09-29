@@ -144,6 +144,7 @@ export default function PacketListenerPage() {
 
  	useEffect(() => {
         if (sockRef.current && sockRef.current.readyState === WebSocket.OPEN) {
+			console.log(filters);
             sockRef.current.send(JSON.stringify({ type: "filters_update", filters }));
         }
     }, [filters]);

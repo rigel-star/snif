@@ -27,7 +27,7 @@ import json
 
 ETHER_IPV4 = 0x0800
 
-lib_sniffer = ctypes.CDLL("./lib/libsnif.so")
+lib_sniffer = ctypes.CDLL("../lib/libsnif.so")
 
 '''
 These functions are for capturing and maanging

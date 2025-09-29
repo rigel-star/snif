@@ -87,7 +87,7 @@ char* parse_ipv4_to_json(const u_char* data) {
     cJSON_AddNumberToObject(ip_json, "Offset", offset);
     cJSON_AddNumberToObject(ip_json, "Time to Live", ip->ttl);
     cJSON_AddNumberToObject(ip_json, "Protocol", ip->proto);
-    cJSON_AddNumberToObject(ip_json, "Payload Type", ip->proto); // used by the frontend
+    cJSON_AddNumberToObject(ip_json, "Payload Type", 0x0800); // used by the frontend
     cJSON_AddNumberToObject(ip_json, "Checksum", ntohs(ip->chk));
 
     char src_ip[16], dst_ip[16];
